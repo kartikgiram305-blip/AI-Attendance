@@ -97,7 +97,7 @@ function renderLandingPage() {
             
             <nav class="landing-nav" id="landingNav">
                 <div class="navbar-brand">
-                    <span class="material-symbols-rounded logo-icon">school</span> Attend<span>AI</span>
+                    <span class="material-symbols-rounded logo-icon">psychology</span> Attend<span>AI</span>
                 </div>
                 <div>
                     <button class="btn btn-secondary" style="margin-right: 12px; background: transparent; border: none; color: white; font-weight: 600;" onclick="navigate('/login')">Log In</button>
@@ -106,9 +106,9 @@ function renderLandingPage() {
             </nav>
 
             <main class="hero-section">
-                <div class="hero-badge scroll-reveal fade-up">🚀 The Future of Classroom Management</div>
-                <h1 class="hero-title scroll-reveal fade-up delay-1">Effortless Attendance with AI-Powered Insights</h1>
-                <p class="hero-subtitle scroll-reveal fade-up delay-2">Automate your class rosters, instantly notify absentees via Email/SMS, and gain powerful insights with a single click. Designed for modern educators.</p>
+                <div class="hero-badge scroll-reveal fade-up">🤖 Intelligent Attendance Automation</div>
+                <h1 class="hero-title scroll-reveal fade-up delay-1">Automated Insights with Neural Networks</h1>
+                <p class="hero-subtitle scroll-reveal fade-up delay-2">Harness the power of AI to track presence, predict absenteeism, and automate smart notifications. Elevate your data to the next generation.</p>
                 
                 <div class="hero-cta scroll-reveal fade-up delay-3">
                     <button class="btn btn-primary pulse-btn" onclick="navigate('/login')">Start for Free</button>
@@ -120,26 +120,26 @@ function renderLandingPage() {
                 <div class="features-grid">
                     <div class="feature-card scroll-reveal fade-up">
                         <div class="feature-icon blue">
-                            <span class="material-symbols-rounded">speed</span>
+                            <span class="material-symbols-rounded">memory</span>
                         </div>
-                        <h3 class="feature-title">Lightning Fast</h3>
-                        <p class="feature-desc">Mark attendance for hundreds of students in seconds. Designed for speed so you can focus on teaching.</p>
+                        <h3 class="feature-title">Neural Processing</h3>
+                        <p class="feature-desc">Process hundreds of data points in milliseconds. Engineered for unprecedented data ingestion speed and accuracy.</p>
                     </div>
                     
                     <div class="feature-card scroll-reveal fade-up delay-1">
                         <div class="feature-icon purple">
-                            <span class="material-symbols-rounded">notifications_active</span>
+                            <span class="material-symbols-rounded">hub</span>
                         </div>
-                        <h3 class="feature-title">Smart Notifications</h3>
-                        <p class="feature-desc">Automatically alert parents and students of absences via Email, SMS, or Voice calls based on absence thresholds.</p>
+                        <h3 class="feature-title">Automated Triggers</h3>
+                        <p class="feature-desc">A smart alert system that automatically notifies contacts via Email or SMS when AI-determined absence thresholds are met.</p>
                     </div>
 
                     <div class="feature-card scroll-reveal fade-up delay-2">
                         <div class="feature-icon pink">
-                            <span class="material-symbols-rounded">upload_file</span>
+                            <span class="material-symbols-rounded">dataset</span>
                         </div>
-                        <h3 class="feature-title">Bulk Import</h3>
-                        <p class="feature-desc">Upload Excel or CSV files to instantly populate your class rosters. No more manual data entry.</p>
+                        <h3 class="feature-title">Data Pipeline</h3>
+                        <p class="feature-desc">Seamlessly ingest bulk CSV or Excel datasets into your intelligent attendance matrix without manual entry.</p>
                     </div>
                 </div>
             </section>
