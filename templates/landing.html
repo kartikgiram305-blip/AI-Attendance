@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendAI - Intelligent Attendance System</title>
+    <meta name="description" content="Experience the future of attendance management with AttendAI.">
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link rel="stylesheet" href="/landing.css">
+</head>
+<body>
+    <div class="mesh-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <nav class="glass-nav fade-up">
+        <div class="nav-brand">
+            <span class="material-symbols-rounded">school</span> Attend<span>AI</span>
+        </div>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a href="/app" class="btn btn-primary">Enter App</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content fade-up delay-1">
+                <h1>The Future of<br><span>Attendance Management</span></h1>
+                <p>An intelligent, fluid, and seamless way to track students. Designed with cutting-edge technology and unparalleled aesthetics.</p>
+                <div class="hero-actions">
+                    <a href="/app" class="btn btn-primary btn-large">Get Started <span class="material-symbols-rounded">arrow_forward</span></a>
+                    <a href="#features" class="btn btn-outline btn-large">Learn More</a>
+                </div>
+            </div>
+            
+            <!-- A decorative glass card in the hero to show off the design -->
+            <div class="hero-graphic fade-up delay-2">
+                <div class="glass-card decorative-card">
+                    <div class="card-header">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                    </div>
+                    <div class="card-body mock-app">
+                        <div class="mock-header">
+                            <div class="mock-title">Attendance Overview</div>
+                            <div class="mock-badge">Today</div>
+                        </div>
+                        <div class="mock-chart">
+                            <div class="mock-bar" style="height: 60%"></div>
+                            <div class="mock-bar" style="height: 80%"></div>
+                            <div class="mock-bar" style="height: 40%"></div>
+                            <div class="mock-bar" style="height: 90%"></div>
+                            <div class="mock-bar" style="height: 70%"></div>
+                            <div class="mock-bar" style="height: 100%; background: var(--primary)"></div>
+                        </div>
+                        <div class="mock-list">
+                            <div class="mock-item">
+                                <div class="mock-avatar"></div>
+                                <div class="mock-info">
+                                    <div class="mock-name"></div>
+                                    <div class="mock-status present"></div>
+                                </div>
+                            </div>
+                            <div class="mock-item">
+                                <div class="mock-avatar"></div>
+                                <div class="mock-info">
+                                    <div class="mock-name"></div>
+                                    <div class="mock-status absent"></div>
+                                </div>
+                            </div>
+                            <div class="mock-item">
+                                <div class="mock-avatar"></div>
+                                <div class="mock-info">
+                                    <div class="mock-name"></div>
+                                    <div class="mock-status present"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features-section">
+            <h2 class="fade-up">Intelligent Features</h2>
+            <div class="features-grid">
+                <div class="glass-card feature-card fade-up delay-1">
+                    <span class="material-symbols-rounded feature-icon">insights</span>
+                    <h3>Smart Analytics</h3>
+                    <p>Track attendance trends instantly with our fluid dashboard and beautiful visualizations.</p>
+                </div>
+                <div class="glass-card feature-card fade-up delay-2">
+                    <span class="material-symbols-rounded feature-icon">campaign</span>
+                    <h3>Instant Notifications</h3>
+                    <p>Automatically alert parents via SMS and Email the moment a student is absent.</p>
+                </div>
+                <div class="glass-card feature-card fade-up delay-3">
+                    <span class="material-symbols-rounded feature-icon">cloud_sync</span>
+                    <h3>Cloud Sync</h3>
+                    <p>Your data is securely backed up and instantly available across all your devices.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Fluid Animations using IntersectionObserver
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
