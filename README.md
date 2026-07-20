@@ -1,20 +1,54 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# AttendAI - Intelligent Attendance System
 
-# Run and deploy your AI Studio app
+AttendAI is a modern, high-performance web application designed to simplify and streamline attendance management for educational institutions and organizations. Built with a premium "Liquid Glass" Apple-inspired UI, it offers a breathtaking user experience paired with robust backend functionality.
 
-This contains everything you need to run your app locally.
+## 🌟 Features
 
-View your app in AI Studio: https://ai.studio/apps/5b4cd2cd-e5f6-4c4c-85cc-a0edf657bb96
+- **Stunning UI/UX**: Breathtaking "liquid glass" frosted panels, mesh gradients, and buttery-smooth animations.
+- **Class & Student Management**: Easily create classes, and add, edit, or remove students.
+- **Bulk Import**: Effortlessly import large lists of students using CSV or Excel files.
+- **Attendance Tracking**: A clean, intuitive dashboard to mark and track student attendance (Present/Absent).
+- **Automated Notifications**: Built-in system to trigger SMS, Email, and call notifications for absences.
+- **Secure Backend**: Powered by Node.js, Express, and a lightning-fast SQLite database.
 
-## Run Locally
+## 🚀 Getting Started
 
-**Prerequisites:**  Node.js
+Follow these instructions to get a copy of the project up and running on your local machine.
 
+### Prerequisites
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+You will need [Node.js](https://nodejs.org/) installed on your machine.
+
+### Installation
+
+1. Clone the repository or download the ZIP file.
+2. Open a terminal and navigate to the project directory.
+3. Install the required dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running the Application
+
+Start the server using npm:
+```bash
+npm start
+```
+
+Once the server is running, open your web browser and navigate to:
+**http://localhost:3000**
+
+## 📁 Project Structure
+
+- `server.js` - The main Express backend server and SQLite database configuration.
+- `public/` - Contains the frontend CSS and JavaScript.
+- `templates/` - Contains the application HTML files (`landing.html` and `app.html`).
+- `assets/` - Directory for tracking static images and template files.
+- `uploads/` - Temporary directory used by the application to process bulk CSV/Excel imports.
+
+## 🛠 Technologies Used
+
+- **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+), Chart.js
+- **Backend**: Node.js, Express.js
+- **Database**: SQLite (via `better-sqlite3`)
+- **File Parsing**: `multer` and `xlsx`

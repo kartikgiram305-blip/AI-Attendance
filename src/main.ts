@@ -1,7 +1,6 @@
 const app = document.getElementById('app');
 
 const state = {
-    token: localStorage.getItem('token') || null,
     username: localStorage.getItem('username') || null,
     currentPath: '/',
     classes: [],
@@ -13,11 +12,10 @@ const state = {
 };
 
 // --- API Wrapper ---
-async function apiCall(endpoint, method = 'GET', body = null) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+async function apiCall(endpoint: string, method = 'GET', body: any = null) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     
-    const options = { method, headers };
+    const options: RequestInit = { method, headers, credentials: 'include' };
     if (body) options.body = JSON.stringify(body);
     
     const res = await fetch(endpoint, options);
@@ -35,11 +33,11 @@ function navigate(path) {
 }
 
 function logout() {
-    localStorage.removeItem('token');
     localStorage.removeItem('username');
-    state.token = null;
     state.username = null;
-    navigate('/login');
+    fetch('/api/logout', { method: 'POST' }).finally(() => {
+        navigate('/login');
+    });
 }
 
 function showToast(message, type = 'success') {
@@ -63,12 +61,7 @@ function showToast(message, type = 'success') {
 
 // --- Views ---
 function render() {
-    app.innerHTML = '';
-    
-    if (!state.token && state.currentPath !== '/login') {
-        navigate('/login');
-        return;
-    }
+    app!.innerHTML = '';
     
     if (state.currentPath === '/login') {
         app.innerHTML = renderLogin();
@@ -116,18 +109,17 @@ function bindLogin() {
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: u, password: p })
+                body: JSON.stringify({ username: u, password: p }),
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
-                localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
-                state.token = data.token;
                 state.username = data.username;
                 navigate('/');
             } else {
-                document.getElementById('loginError').textContent = 'Invalid credentials';
-                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError')!.textContent = 'Invalid credentials';
+                document.getElementById('loginError')!.style.display = 'block';
             }
         } catch (err) {
             console.error(err);
