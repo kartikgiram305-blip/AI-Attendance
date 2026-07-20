@@ -11,7 +11,8 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.get('/index.css', (req, res) => res.sendFile(path.join(__dirname, 'index.css')));
+app.get('/script.js', (req, res) => res.sendFile(path.join(__dirname, 'script.js')));
 
 // Set up SQLite database
 const dbPath = path.join(__dirname, 'database.sqlite');
@@ -348,7 +349,7 @@ app.post('/api/students/import', upload.single('file'), (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'templates', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(port, () => {
