@@ -156,12 +156,25 @@ function renderDashboard() {
         <div class="container animate-fade-in">
             <div class="header-actions">
                 <div>
+                    <h2>Classes Overview</h2>
+                    <p class="text-muted">Manage your classes and student rosters</p>
+                </div>
+                <button class="btn btn-primary" onclick="openCreateClassModal()">
+                    <span class="material-symbols-rounded">add</span> New Class
+                </button>
+            </div>
+            <div class="grid" id="classesGrid" style="margin-bottom: 48px;">
+                <!-- Loading -->
+            </div>
+
+            <div class="header-actions">
+                <div>
                     <h2>Global Insights</h2>
                     <p class="text-muted">Overview of attendance across all classes</p>
                 </div>
             </div>
             
-            <div id="globalDashboardContainer" style="margin-bottom: 48px;">
+            <div id="globalDashboardContainer">
                 <!-- Loading Skeleton -->
                 <div class="skeleton-card" style="padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
                     <div class="skeleton skeleton-chart" style="height: 60px; margin-bottom: 24px;"></div>
@@ -171,19 +184,6 @@ function renderDashboard() {
                         <div class="skeleton skeleton-cell" style="flex:1;"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="header-actions">
-                <div>
-                    <h2>Classes Overview</h2>
-                    <p class="text-muted">Manage your classes and student rosters</p>
-                </div>
-                <button class="btn btn-primary" onclick="openCreateClassModal()">
-                    <span class="material-symbols-rounded">add</span> New Class
-                </button>
-            </div>
-            <div class="grid" id="classesGrid">
-                <!-- Loading -->
             </div>
         </div>
         
@@ -239,7 +239,7 @@ async function loadGlobalDashboard() {
         }
 
         container.innerHTML = `
-            <div style="display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 16px;">
                     <div style="background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                         <div class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Classes</div>
@@ -255,6 +255,21 @@ async function loadGlobalDashboard() {
                     </div>
                 </div>
                 ${chartHtml}
+            </div>
+            
+            <div style="display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Today's Attendance Status</h3>
+                    <div style="position: relative; flex: 1; min-height: 200px;">
+                        <canvas id="todayDoughnutChart"></canvas>
+                    </div>
+                </div>
+                <div style="flex: 2; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Current Month Attendance by Class</h3>
+                    <div style="position: relative; flex: 1; min-height: 200px;">
+                        <canvas id="classBarChart"></canvas>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -311,6 +326,72 @@ async function loadGlobalDashboard() {
                         x: { grid: { display: false } }
                     },
                     interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+        
+        // Render Today's Doughnut Chart
+        const todayCtx = document.getElementById('todayDoughnutChart');
+        if (todayCtx && stats.todayStats) {
+            if (window.todayChartInstance) window.todayChartInstance.destroy();
+            
+            const hasData = stats.todayStats.present > 0 || stats.todayStats.absent > 0;
+            
+            window.todayChartInstance = new Chart(todayCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: hasData ? ['Present', 'Absent'] : ['No Data'],
+                    datasets: [{
+                        data: hasData ? [stats.todayStats.present, stats.todayStats.absent] : [1],
+                        backgroundColor: hasData ? ['#10B981', '#EF4444'] : ['#E2E8F0'],
+                        borderWidth: 0,
+                        hoverOffset: hasData ? 4 : 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { enabled: hasData }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Render Class Bar Chart
+        const classCtx = document.getElementById('classBarChart');
+        if (classCtx && stats.classAttendance) {
+            if (window.classChartInstance) window.classChartInstance.destroy();
+            
+            const classLabels = stats.classAttendance.map(c => c.name);
+            const classRates = stats.classAttendance.map(c => parseFloat(c.rate));
+            
+            window.classChartInstance = new Chart(classCtx, {
+                type: 'bar',
+                data: {
+                    labels: classLabels.length > 0 ? classLabels : ['No Classes'],
+                    datasets: [{
+                        label: 'Attendance Rate (%)',
+                        data: classLabels.length > 0 ? classRates : [0],
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            ticks: { callback: v => v + '%' },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: { grid: { display: false } }
+                    }
                 }
             });
         }
@@ -849,11 +930,93 @@ async function openNotifyModal() {
 }
 
 async function submitNotifications() {
+    const btn = document.querySelector('#notifyModal .btn-primary');
+    let originalHtml = '';
+    if (btn) {
+        originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span> Sending...';
+    }
+
     try {
-        await apiCall('/api/notifications/send', 'POST', { date: state.todayDate });
+        const result = await apiCall('/api/notifications/send', 'POST', { date: state.todayDate });
         closeModal('notifyModal');
-        showToast('Notifications process initiated for today.');
-    } catch(e) { console.error(e); }
+        showToast('Notifications process completed.');
+        if (result.logs) {
+            showNotificationLogsModal(result.logs);
+        }
+    } catch(e) { 
+        console.error(e); 
+        showToast('Failed to send alerts', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+}
+
+function showNotificationLogsModal(logs) {
+    let container = document.getElementById('notificationLogsModal');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notificationLogsModal';
+        container.className = 'modal-overlay';
+        document.body.appendChild(container);
+    }
+    
+    let tableHtml = `
+        <table class="spreadsheet-table" style="width: 100%; text-align: left; margin-top: 16px;">
+            <thead>
+                <tr>
+                    <th style="padding: 12px; background: #F1F5F9;">Student</th>
+                    <th style="padding: 12px; background: #F1F5F9;">Action</th>
+                    <th style="padding: 12px; background: #F1F5F9;">Status</th>
+                    <th style="padding: 12px; background: #F1F5F9;">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logs.map(log => {
+                    let statusColor = 'var(--text-main)';
+                    if(log.status === 'Success') statusColor = 'var(--success)';
+                    if(log.status === 'Skipped') statusColor = 'var(--text-muted)';
+                    if(log.status === 'Error') statusColor = 'var(--danger)';
+                    
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px;">${escapeHTML(log.studentName)}</td>
+                            <td style="padding: 12px;">${escapeHTML(log.action)}</td>
+                            <td style="padding: 12px; font-weight: bold; color: ${statusColor};">${escapeHTML(log.status)}</td>
+                            <td style="padding: 12px; color: var(--text-muted);">${escapeHTML(log.reason || '')}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    if (logs.length === 0) {
+        tableHtml = '<p class="text-muted mt-4">No notification actions were logged.</p>';
+    }
+
+    container.innerHTML = `
+        <div class="modal-content" style="max-width: 700px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3 class="modal-title">Background Process Logs</h3>
+                <button class="btn-icon" onclick="closeModal('notificationLogsModal')"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <p class="text-muted mb-2">Detailed view of the automated notification process for ${state.todayDate}.</p>
+                ${tableHtml}
+            </div>
+            <div class="modal-footer" style="margin-top: 16px;">
+                <button class="btn btn-secondary" onclick="closeModal('notificationLogsModal')">Close</button>
+            </div>
+        </div>
+    `;
+    
+    // Slight delay to allow DOM to render before adding active class for transition
+    setTimeout(() => container.classList.add('active'), 10);
 }
 
 function openEditClassModal() {
