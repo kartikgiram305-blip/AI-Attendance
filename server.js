@@ -11,8 +11,7 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.get('/index.css', (req, res) => res.sendFile(path.join(__dirname, 'index.css')));
-app.get('/script.js', (req, res) => res.sendFile(path.join(__dirname, 'script.js')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Set up SQLite database
 const dbPath = path.join(__dirname, 'database.sqlite');
@@ -86,7 +85,7 @@ app.put('/api/classes/:id', (req, res) => {
 app.put('/api/students/:id', (req, res) => {
   const { id } = req.params;
   const { name, email, contact } = req.body;
-  if (!name) return res.status(400).json({ error: 'name required' });
+  if (!name || !email || !contact) return res.status(400).json({ error: 'name, email, and contact are required' });
   try {
     db.prepare("UPDATE students SET name = ?, email = ?, contact_number = ? WHERE id = ?").run(name, email, contact, id);
     res.json({ success: true });
@@ -181,8 +180,8 @@ app.get('/api/students', (req, res) => {
 
 app.post('/api/students', (req, res) => {
   const { classId, name, email, contact } = req.body;
-  if (!classId || !name) return res.status(400).json({ error: 'classId and name required' });
-  const result = db.prepare("INSERT INTO students (class_id, name, email, contact_number) VALUES (?, ?, ?, ?)").run(classId, name, email, contact || '');
+  if (!classId || !name || !email || !contact) return res.status(400).json({ error: 'classId, name, email, and contact are required' });
+  const result = db.prepare("INSERT INTO students (class_id, name, email, contact_number) VALUES (?, ?, ?, ?)").run(classId, name, email, contact);
   res.json({ id: result.lastInsertRowid, class_id: classId, name, email, contact_number: contact });
 });
 
@@ -348,8 +347,12 @@ app.post('/api/students/import', upload.single('file'), (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'templates', 'landing.html'));
+});
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'templates', 'app.html'));
 });
 
 app.listen(port, () => {
