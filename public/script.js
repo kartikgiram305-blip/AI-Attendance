@@ -1378,6 +1378,10 @@ async function submitAddStudent() {
     if(!email) return showToast('Email is required', 'error');
     if(!contact) return showToast('Contact Number is required', 'error');
     
+    if(!contact.startsWith('+91')) {
+        return showToast('Please include the +91 prefix in the contact number', 'error');
+    }
+    
     try {
         await apiCall('/api/students', 'POST', { classId: state.currentClass.id, name, email, contact });
         closeModal('addStudentModal');
@@ -1607,6 +1611,10 @@ async function submitEditStudent() {
     if(!name) return showToast('Name is required', 'error');
     if(!email) return showToast('Email is required', 'error');
     if(!contact) return showToast('Contact Number is required', 'error');
+    
+    if(!contact.startsWith('+91')) {
+        return showToast('Please include the +91 prefix in the contact number', 'error');
+    }
     try {
         await apiCall(`/api/students/${id}`, 'PUT', { name, email, contact });
         closeModal('editStudentModal');
