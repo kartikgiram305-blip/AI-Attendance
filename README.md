@@ -50,8 +50,15 @@ You can easily run the application using PHP's built-in web server. Open your te
 php -S localhost:3000 router.php
 ```
 
+> **Note for Windows/XAMPP Users:** If you get an error saying `php is not recognized`, it means PHP is not in your system's PATH. If you have XAMPP installed, you can start the server by using the full path to PHP instead:
+> ```powershell
+> C:\xampp\php\php.exe -S localhost:3000 router.php
+> ```
+
 Once the server is running, open your web browser and navigate to:
 **http://localhost:3000**
+
+To stop the server, go back to your terminal window and press `Ctrl + C`.
 
 ### Running with Apache (XAMPP/WAMP)
 1. Move the `AttendAI` folder into your `htdocs` (XAMPP) or `www` (WAMP) directory.
