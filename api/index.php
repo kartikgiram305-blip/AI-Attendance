@@ -46,6 +46,9 @@ function jsonResponse($data, $statusCode = 200) {
 // Simple Router
 $routes = [
     'POST /api/login' => 'App\Controllers\AuthController@login',
+    'GET /api/user/me' => 'App\Controllers\AuthController@me',
+    'PUT /api/user/preferences' => 'App\Controllers\AuthController@updatePreferences',
+    
     'GET /api/classes' => 'App\Controllers\ClassesController@index',
     'POST /api/classes' => 'App\Controllers\ClassesController@create',
     'PUT /api/classes' => 'App\Controllers\ClassesController@update',
@@ -64,7 +67,9 @@ $routes = [
     'GET /api/dashboard/stats' => 'App\Controllers\DashboardController@stats',
     
     'GET /api/notifications/preview' => 'App\Controllers\NotificationsController@preview',
+    'GET /api/notifications/pending' => 'App\Controllers\NotificationsController@pending',
     'POST /api/notifications/send' => 'App\Controllers\NotificationsController@send',
+    'POST /api/notifications/send-single' => 'App\Controllers\NotificationsController@sendSingle',
     'POST /api/notifications/twilio-voice-callback' => 'App\Controllers\NotificationsController@twilioVoiceCallback',
 ];
 

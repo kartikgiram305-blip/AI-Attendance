@@ -185,6 +185,151 @@ class NotificationsController {
         ]);
     }
 
+    public function pending() {
+        $date = isset($_GET['date']) ? $_GET['date'] : null;
+        if (!$date) {
+            http_response_code(400);
+            echo json_encode(['error' => 'date required']);
+            return;
+        }
+        
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT student_id FROM attendance WHERE date = ? AND status = 'A' AND notification_sent = 0");
+        $stmt->execute([$date]);
+        $absentees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        echo json_encode(['pending' => array_column($absentees, 'student_id')]);
+    }
+
+    public function sendSingle() {
+        $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $date = isset($data['date']) ? $data['date'] : null;
+        $studentId = isset($data['student_id']) ? $data['student_id'] : null;
+        
+        if (!$date || !$studentId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'date and student_id required']);
+            return;
+        }
+        
+        $pdo = Database::getConnection();
+
+        $twilioSid = trim($_ENV['TWILIO_ACCOUNT_SID'] ?? getenv('TWILIO_ACCOUNT_SID') ?: '');
+        $twilioAuth = trim($_ENV['TWILIO_AUTH_TOKEN'] ?? getenv('TWILIO_AUTH_TOKEN') ?: '');
+        $twilioPhone = trim($_ENV['TWILIO_PHONE_NUMBER'] ?? getenv('TWILIO_PHONE_NUMBER') ?: '');
+
+        $mjKey = trim($_ENV['MAILJET_API_KEY'] ?? getenv('MAILJET_API_KEY') ?: '');
+        $mjSecret = trim($_ENV['MAILJET_API_SECRET'] ?? getenv('MAILJET_API_SECRET') ?: '');
+        $mjFromEmail = trim($_ENV['MAILJET_FROM_EMAIL'] ?? getenv('MAILJET_FROM_EMAIL') ?: '');
+
+        $mockMode = (!$twilioSid || !$mjKey);
+
+        $twilioClient = null;
+        $mailjetClient = null;
+
+        if (!$mockMode) {
+            if ($twilioSid && $twilioAuth) {
+                $twilioClient = new \Twilio\Rest\Client($twilioSid, $twilioAuth);
+            }
+            if ($mjKey && $mjSecret) {
+                $mailjetClient = new \Mailjet\Client($mjKey, $mjSecret, true, ['version' => 'v3.1']);
+            }
+        }
+
+        $studentStmt = $pdo->prepare("SELECT * FROM students WHERE id = ?");
+        $studentStmt->execute([$studentId]);
+        $student = $studentStmt->fetch();
+        
+        if (!$student) {
+             echo json_encode(['success' => false, 'logs' => []]);
+             return;
+        }
+
+        $absencesStmt = $pdo->prepare("SELECT COUNT(*) as count FROM attendance WHERE student_id = ? AND status = 'A'");
+        $absencesStmt->execute([$studentId]);
+        $totalAbsences = (int)$absencesStmt->fetch()['count'];
+        
+        $logs = [];
+        $hasEmail = !empty(trim($student['email'])) && $student['email'] !== 'no-email@domain.com';
+        $hasContact = !empty(trim($student['contact_number'])) && $student['contact_number'] !== '0000000000';
+
+        if ($totalAbsences >= 6) {
+            if ($hasContact) {
+                if ($twilioClient && $twilioPhone && !$mockMode) {
+                    $baseUrl = rtrim(getenv('APP_URL') ?: '', '/');
+                    try {
+                        $twilioClient->calls->create(
+                            $student['contact_number'], 
+                            $twilioPhone, 
+                            [
+                                "twiml" => "<Response><Gather input=\"speech\" action=\"{$baseUrl}/api/notifications/twilio-voice-callback\" timeout=\"5\"><Say>Alert from Attend A I. {$student['name']} has been marked absent. This is their {$totalAbsences}th absence. Please state the reason for this absence after the beep.</Say></Gather><Say>We didn't receive any input. Goodbye.</Say></Response>"
+                            ]
+                        );
+                        $logs[] = ['studentName' => $student['name'], 'action' => 'Voice Call', 'status' => 'Success', 'reason' => 'Call initiated successfully'];
+                    } catch (\Exception $e) {
+                        $logs[] = ['studentName' => $student['name'], 'action' => 'Voice Call', 'status' => 'Error', 'reason' => $e->getMessage()];
+                    }
+                } else {
+                    $logs[] = ['studentName' => $student['name'], 'action' => 'Voice Call', 'status' => 'Success', 'reason' => 'Mock call logged (No API Keys)'];
+                }
+            }
+        } else {
+            if ($hasContact) {
+                if ($twilioClient && $twilioPhone && !$mockMode) {
+                    try {
+                        $twilioClient->messages->create(
+                            $student['contact_number'],
+                            [
+                                'from' => $twilioPhone,
+                                'body' => "AttendAI: {$student['name']} was marked absent today ({$date})."
+                            ]
+                        );
+                        $logs[] = ['studentName' => $student['name'], 'action' => 'SMS', 'status' => 'Success', 'reason' => 'Message sent successfully'];
+                    } catch (\Exception $e) {
+                        $logs[] = ['studentName' => $student['name'], 'action' => 'SMS', 'status' => 'Error', 'reason' => $e->getMessage()];
+                    }
+                } else {
+                    $logs[] = ['studentName' => $student['name'], 'action' => 'SMS', 'status' => 'Success', 'reason' => 'Mock SMS logged (No API Keys)'];
+                }
+            }
+            
+            if ($hasEmail) {
+                if ($mailjetClient && $mjFromEmail && !$mockMode) {
+                    try {
+                        $body = [
+                            'Messages' => [
+                                [
+                                    'From' => [ 'Email' => $mjFromEmail, 'Name' => 'AttendAI' ],
+                                    'To' => [ [ 'Email' => $student['email'], 'Name' => $student['name'] ] ],
+                                    'Subject' => "Absence Notification",
+                                    'TextPart' => "Dear Parent/Guardian, \n\n{$student['name']} was marked absent on {$date}. \n\nRegards, \nAttendAI System"
+                                ]
+                            ]
+                        ];
+                        $response = $mailjetClient->post(\Mailjet\Resources::$Email, ['body' => $body]);
+                        if ($response->success()) {
+                            $logs[] = ['studentName' => $student['name'], 'action' => 'Email', 'status' => 'Success', 'reason' => 'Email sent successfully'];
+                        } else {
+                            $logs[] = ['studentName' => $student['name'], 'action' => 'Email', 'status' => 'Error', 'reason' => 'Mailjet Error: ' . json_encode($response->getData())];
+                        }
+                    } catch (\Exception $e) {
+                        $logs[] = ['studentName' => $student['name'], 'action' => 'Email', 'status' => 'Error', 'reason' => $e->getMessage()];
+                    }
+                } else {
+                    $logs[] = ['studentName' => $student['name'], 'action' => 'Email', 'status' => 'Success', 'reason' => 'Mock Email logged (No API Keys)'];
+                }
+            }
+        }
+        
+        $updateStmt = $pdo->prepare("UPDATE attendance SET notification_sent = 1 WHERE student_id = ? AND date = ?");
+        $updateStmt->execute([$studentId, $date]);
+
+        echo json_encode([
+            'success' => true, 
+            'logs' => $logs
+        ]);
+    }
+
     public function twilioVoiceCallback() {
         $parentResponse = isset($_POST['SpeechResult']) ? $_POST['SpeechResult'] : null;
         $incomingCallTo = isset($_POST['To']) ? $_POST['To'] : null;

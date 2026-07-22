@@ -1,8 +1,11 @@
 const app = document.getElementById('app');
 
+const defaultPreferences = ['trend', 'today', 'classes', 'volume', 'dow', 'atRisk', 'absences', 'heatmap', 'sixMonth', 'topStudents', 'classRadar'];
+
 const state = {
     token: localStorage.getItem('token') || null,
     username: localStorage.getItem('username') || null,
+    preferences: JSON.parse(localStorage.getItem('preferences')) || defaultPreferences,
     currentPath: '/',
     classes: [],
     currentClass: null,
@@ -37,8 +40,10 @@ function navigate(path) {
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('preferences');
     state.token = null;
     state.username = null;
+    state.preferences = defaultPreferences;
     navigate('/login');
 }
 
@@ -122,8 +127,11 @@ function bindLogin() {
                 const data = await res.json();
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
+                const prefs = data.preferences || defaultPreferences;
+                localStorage.setItem('preferences', JSON.stringify(prefs));
                 state.token = data.token;
                 state.username = data.username;
+                state.preferences = prefs;
                 navigate('/');
             } else {
                 document.getElementById('loginError').textContent = 'Invalid credentials';
@@ -172,6 +180,9 @@ function renderDashboard() {
                     <h2>Global Insights</h2>
                     <p class="text-muted">Overview of attendance across all classes</p>
                 </div>
+                <button class="btn btn-outline" onclick="openCustomizeModal()">
+                    <span class="material-symbols-rounded">tune</span> Customize
+                </button>
             </div>
             
             <div id="globalDashboardContainer">
@@ -187,6 +198,36 @@ function renderDashboard() {
             </div>
         </div>
         
+        <!-- Customize Dashboard Modal -->
+        <div class="modal-overlay" id="customizeModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Customize Dashboard</h3>
+                    <button class="btn-icon" onclick="closeModal('customizeModal')"><span class="material-symbols-rounded">close</span></button>
+                </div>
+                <div class="modal-body" style="padding: 0 24px 24px 24px;">
+                    <p class="text-muted" style="margin-bottom: 16px;">Select which widgets you want to display on your dashboard.</p>
+                    <div class="customize-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        ${renderCustomizeWidgetOption('trend', '30-Day Global Trend', 'monitoring')}
+                        ${renderCustomizeWidgetOption('today', 'Today Status', 'donut_small')}
+                        ${renderCustomizeWidgetOption('classes', 'Class Attendance', 'bar_chart')}
+                        ${renderCustomizeWidgetOption('volume', 'Present vs Absent', 'stacked_bar_chart')}
+                        ${renderCustomizeWidgetOption('dow', 'Day of Week Trends', 'pie_chart')}
+                        ${renderCustomizeWidgetOption('atRisk', 'At-Risk Students', 'warning')}
+                        ${renderCustomizeWidgetOption('absences', 'Consecutive Absences', 'notifications_active')}
+                        ${renderCustomizeWidgetOption('heatmap', '90-Day Heatmap', 'grid_view')}
+                        ${renderCustomizeWidgetOption('sixMonth', '6-Month Averages', 'event')}
+                        ${renderCustomizeWidgetOption('topStudents', 'Star Students', 'star')}
+                        ${renderCustomizeWidgetOption('classRadar', 'Class Comparison', 'radar')}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('customizeModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveCustomizeSettings()">Apply Changes</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Create Class Modal -->
         <div class="modal-overlay" id="createClassModal">
             <div class="modal-content">
@@ -205,6 +246,49 @@ function renderDashboard() {
             </div>
         </div>
     `;
+}
+
+function renderCustomizeWidgetOption(id, name, icon) {
+    const isChecked = state.preferences.includes(id) ? 'checked' : '';
+    return `
+        <label class="widget-option" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-rounded" style="color: var(--primary);">${icon}</span>
+                <span style="font-weight: 500;">${name}</span>
+            </div>
+            <input type="checkbox" id="cb_${id}" value="${id}" ${isChecked} style="accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer;">
+        </label>
+    `;
+}
+
+function openCustomizeModal() {
+    // Re-check boxes based on current state
+    ['trend', 'today', 'classes', 'volume', 'dow', 'atRisk', 'absences', 'heatmap', 'sixMonth', 'topStudents', 'classRadar'].forEach(id => {
+        const cb = document.getElementById('cb_' + id);
+        if (cb) cb.checked = state.preferences.includes(id);
+    });
+    document.getElementById('customizeModal').classList.add('active');
+}
+
+async function saveCustomizeSettings() {
+    const checkboxes = document.querySelectorAll('.customize-grid input[type="checkbox"]');
+    const newPrefs = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) newPrefs.push(cb.value);
+    });
+    
+    state.preferences = newPrefs;
+    localStorage.setItem('preferences', JSON.stringify(newPrefs));
+    
+    try {
+        await apiCall('/api/user/preferences', 'PUT', { preferences: newPrefs });
+        showToast('Dashboard customized successfully');
+    } catch (e) {
+        showToast('Saved locally, but failed to sync to server', 'error');
+    }
+    
+    closeModal('customizeModal');
+    loadGlobalDashboard();
 }
 
 async function bindDashboard() {
@@ -238,7 +322,12 @@ async function loadGlobalDashboard() {
             `;
         }
 
-        container.innerHTML = `
+        let row1Html = '';
+        const hasSummary = true; // We always show summary for now, or we can make it optional. Let's always show summary to avoid empty space.
+        const showTrend = state.preferences.includes('trend');
+        
+        if (showTrend) {
+            row1Html = `
             <div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 16px;">
                     <div style="background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -255,23 +344,155 @@ async function loadGlobalDashboard() {
                     </div>
                 </div>
                 ${chartHtml}
-            </div>
-            
-            <div style="display: flex; gap: 24px; margin-bottom: 32px; flex-wrap: wrap;">
+            </div>`;
+        } else {
+             row1Html = `
+            <div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px; display: flex; flex-direction: row; gap: 16px;">
+                    <div style="flex:1; background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Classes</div>
+                        <div style="font-size: 1.8rem; font-weight: 700; color: var(--primary);">${stats.totalClasses}</div>
+                    </div>
+                    <div style="flex:1; background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Students</div>
+                        <div style="font-size: 1.8rem; font-weight: 700; color: var(--primary);">${stats.totalStudents}</div>
+                    </div>
+                    <div style="flex:1; background: white; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="text-muted" style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Today's Rate</div>
+                        <div style="font-size: 1.8rem; font-weight: 700; color: var(--primary);">${stats.todayRate}%</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        let html = row1Html;
+        
+        let row2 = [];
+        if (state.preferences.includes('today')) {
+            row2.push(`
                 <div style="flex: 1; min-width: 300px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
                     <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Today's Attendance Status</h3>
                     <div style="position: relative; flex: 1; min-height: 200px;">
                         <canvas id="todayDoughnutChart"></canvas>
                     </div>
                 </div>
+            `);
+        }
+        if (state.preferences.includes('classes')) {
+            row2.push(`
                 <div style="flex: 2; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
                     <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Current Month Attendance by Class</h3>
                     <div style="position: relative; flex: 1; min-height: 200px;">
                         <canvas id="classBarChart"></canvas>
                     </div>
                 </div>
-            </div>
-        `;
+            `);
+        }
+        if (row2.length > 0) {
+            html += `<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">${row2.join('')}</div>`;
+        }
+        
+        let row3 = [];
+        if (state.preferences.includes('volume')) {
+            row3.push(`
+                <div style="flex: 2; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Present vs. Absent Volume (30 Days)</h3>
+                    <div style="position: relative; flex: 1; min-height: 250px;">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (state.preferences.includes('dow')) {
+            row3.push(`
+                <div style="flex: 1; min-width: 300px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Trends by Day of Week</h3>
+                    <div style="position: relative; flex: 1; min-height: 250px;">
+                        <canvas id="dayOfWeekChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (row3.length > 0) {
+            html += `<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">${row3.join('')}</div>`;
+        }
+        
+        let row4 = [];
+        if (state.preferences.includes('atRisk')) {
+            row4.push(`
+                <div style="flex: 1; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">At-Risk Students (Bottom 5)</h3>
+                    <div style="position: relative; flex: 1; min-height: 200px;">
+                        <canvas id="atRiskChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (state.preferences.includes('absences')) {
+            row4.push(`
+                <div style="flex: 1; min-width: 300px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Consecutive Absences Alert</h3>
+                    <div id="consecutiveAbsencesList" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 200px;">
+                        <!-- Alerts go here -->
+                    </div>
+                </div>
+            `);
+        }
+        if (row4.length > 0) {
+            html += `<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">${row4.join('')}</div>`;
+        }
+        
+        let row5 = [];
+        if (state.preferences.includes('sixMonth')) {
+            row5.push(`
+                <div style="flex: 2; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">6-Month Historical Averages</h3>
+                    <div style="position: relative; flex: 1; min-height: 250px;">
+                        <canvas id="sixMonthChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (state.preferences.includes('topStudents')) {
+            row5.push(`
+                <div style="flex: 1; min-width: 300px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Star Students (Top 5)</h3>
+                    <div style="position: relative; flex: 1; min-height: 250px;">
+                        <canvas id="topStudentsChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (row5.length > 0) {
+            html += `<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">${row5.join('')}</div>`;
+        }
+
+        let row6 = [];
+        if (state.preferences.includes('classRadar')) {
+            row6.push(`
+                <div style="flex: 1; min-width: 400px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1rem; color: var(--text-main);">Class Performance Comparison</h3>
+                    <div style="position: relative; flex: 1; min-height: 350px; display: flex; justify-content: center;">
+                        <canvas id="classRadarChart"></canvas>
+                    </div>
+                </div>
+            `);
+        }
+        if (row6.length > 0) {
+            html += `<div style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">${row6.join('')}</div>`;
+        }
+        
+        if (state.preferences.includes('heatmap')) {
+            html += `
+            <div style="background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 16px 24px; margin-bottom: 32px; overflow-x: auto;">
+                <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-main);">90-Day Attendance Heatmap</h3>
+                <div id="heatmapGrid" class="heatmap-grid">
+                    <!-- Heatmap cells go here -->
+                </div>
+            </div>`;
+        }
+
+        container.innerHTML = html;
         
         // Render Chart
         const ctx = document.getElementById('globalChart');
@@ -396,6 +617,225 @@ async function loadGlobalDashboard() {
             });
         }
         
+        // Render Volume Chart
+        const volumeCtx = document.getElementById('volumeChart');
+        if (volumeCtx && stats.trend) {
+            if (window.volumeChartInstance) window.volumeChartInstance.destroy();
+            const labels = stats.trend.map(t => {
+                const [y, m, d] = t.date.split('-');
+                return `${parseInt(m)}/${parseInt(d)}`;
+            });
+            const presentData = stats.trend.map(t => t.present);
+            const absentData = stats.trend.map(t => t.absent);
+
+            window.volumeChartInstance = new Chart(volumeCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Present', data: presentData, backgroundColor: '#10B981', stack: 'Stack 0' },
+                        { label: 'Absent', data: absentData, backgroundColor: '#EF4444', stack: 'Stack 0' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }
+                    },
+                    plugins: { tooltip: { mode: 'index', intersect: false }, legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // Render Day of Week Chart
+        const dowCtx = document.getElementById('dayOfWeekChart');
+        if (dowCtx && stats.dayOfWeek) {
+            if (window.dowChartInstance) window.dowChartInstance.destroy();
+            const labels = stats.dayOfWeek.map(d => d.day);
+            const data = stats.dayOfWeek.map(d => parseFloat(d.rate));
+
+            window.dowChartInstance = new Chart(dowCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(79, 70, 229, 0.6)', 'rgba(59, 130, 246, 0.6)', 
+                            'rgba(16, 185, 129, 0.6)', 'rgba(245, 158, 11, 0.6)', 
+                            'rgba(239, 68, 68, 0.6)', 'rgba(139, 92, 246, 0.6)', 'rgba(236, 72, 153, 0.6)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right' } },
+                    scales: { r: { min: 0, max: 100, ticks: { display: false } } }
+                }
+            });
+        }
+
+        // Render At-Risk Chart
+        const atRiskCtx = document.getElementById('atRiskChart');
+        if (atRiskCtx && stats.atRisk) {
+            if (window.atRiskChartInstance) window.atRiskChartInstance.destroy();
+            const labels = stats.atRisk.map(s => s.name);
+            const data = stats.atRisk.map(s => parseFloat(s.rate));
+
+            window.atRiskChartInstance = new Chart(atRiskCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No At-Risk Students'],
+                    datasets: [{
+                        label: 'Attendance Rate (%)',
+                        data: labels.length > 0 ? data : [0],
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Render Consecutive Absences
+        const absencesContainer = document.getElementById('consecutiveAbsencesList');
+        if (absencesContainer && stats.consecutiveAbsences) {
+            if (stats.consecutiveAbsences.length === 0) {
+                absencesContainer.innerHTML = '<div style="color: var(--text-muted); font-style: italic; padding: 12px 0;">No active consecutive absences.</div>';
+            } else {
+                absencesContainer.innerHTML = stats.consecutiveAbsences.map(s => `
+                    <div style="background: #FEF2F2; border-left: 4px solid #EF4444; padding: 12px 16px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #991B1B;">${s.name}</div>
+                            <div style="font-size: 0.85rem; color: #DC2626;">${s.className}</div>
+                        </div>
+                        <div style="background: #EF4444; color: white; padding: 4px 8px; border-radius: 99px; font-size: 0.8rem; font-weight: 700;">
+                            ${s.streak} Days
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Render Heatmap
+        const heatmapContainer = document.getElementById('heatmapGrid');
+        if (heatmapContainer && stats.heatmap) {
+            heatmapContainer.innerHTML = '';
+            stats.heatmap.forEach(h => {
+                const rate = parseFloat(h.rate);
+                let colorClass = 'heatmap-cell-0';
+                if (rate >= 90) colorClass = 'heatmap-cell-4';
+                else if (rate >= 75) colorClass = 'heatmap-cell-3';
+                else if (rate >= 50) colorClass = 'heatmap-cell-2';
+                else if (rate > 0) colorClass = 'heatmap-cell-1';
+                
+                heatmapContainer.innerHTML += `
+                    <div class="heatmap-cell ${colorClass}" title="${h.date}: ${h.rate}%"></div>
+                `;
+            });
+        }
+        
+        // Render 6-Month Trend
+        const ctxSix = document.getElementById('sixMonthChart');
+        if (ctxSix && stats.sixMonthTrend) {
+            if (window.sixMonthChartInstance) window.sixMonthChartInstance.destroy();
+            const labels = stats.sixMonthTrend.map(t => {
+                const date = new Date(t.month + '-01');
+                return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+            });
+            const data = stats.sixMonthTrend.map(t => parseFloat(t.rate));
+            
+            window.sixMonthChartInstance = new Chart(ctxSix, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Attendance %',
+                        data: data,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        // Render Top Students
+        const ctxTop = document.getElementById('topStudentsChart');
+        if (ctxTop && stats.topStudents) {
+            if (window.topStudentsChartInstance) window.topStudentsChartInstance.destroy();
+            window.topStudentsChartInstance = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: stats.topStudents.map(s => s.name),
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: stats.topStudents.map(s => parseFloat(s.rate)),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Render Class Radar
+        const ctxRadar = document.getElementById('classRadarChart');
+        if (ctxRadar && stats.classRadar) {
+            if (window.classRadarChartInstance) window.classRadarChartInstance.destroy();
+            window.classRadarChartInstance = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: stats.classRadar.map(c => c.name),
+                    datasets: [{
+                        label: 'Attendance Rate',
+                        data: stats.classRadar.map(c => parseFloat(c.rate)),
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(139, 92, 246, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+        
     } catch (err) {
         console.error(err);
         container.innerHTML = `<div class="text-danger">Failed to load global insights</div>`;
@@ -416,6 +856,7 @@ async function loadClasses() {
 
     try {
         const classes = await apiCall('/api/classes');
+        classes.sort((a, b) => a.name.localeCompare(b.name));
         state.classes = classes;
         if (classes.length === 0) {
             grid.innerHTML = `<div class="text-muted">No classes found. Create one to get started.</div>`;
@@ -427,7 +868,6 @@ async function loadClasses() {
                     <span class="card-title">${c.name}</span>
                     <span class="badge">${c.studentCount} Students</span>
                 </div>
-                <p class="text-muted mt-4" style="font-size: 0.85rem;">Created: ${new Date(c.created_at).toLocaleDateString()}</p>
             </div>
         `).join('');
     } catch (err) {
@@ -568,6 +1008,25 @@ function renderClassView() {
                 </div>
             </div>
         </div>
+
+        <!-- Terminal Logs Modal -->
+        <div class="modal-overlay" id="terminalModal">
+            <div class="modal-content" style="max-width: 800px; width: 90%; background: #1e1e1e; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div class="modal-header" style="border-bottom: 1px solid #333; padding-bottom: 12px; margin-bottom: 0;">
+                    <h3 class="modal-title" style="color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-rounded" style="color: #3b82f6;">terminal</span>
+                        Background Process Logs
+                    </h3>
+                    <button class="btn-icon" onclick="closeModal('terminalModal')" style="color: #aaa;"><span class="material-symbols-rounded">close</span></button>
+                </div>
+                <div id="terminalOutput" style="background: #000; color: #a3a3a3; font-family: 'Courier New', Courier, monospace; font-size: 14px; padding: 16px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: #3b82f6;">&gt; Initializing background task...</div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #333; margin-top: 0; padding-top: 16px;">
+                    <button class="btn btn-secondary" onclick="closeModal('terminalModal')" style="background: #333; color: #fff; border: none;">Close to Background</button>
+                </div>
+            </div>
+        </div>
         
         <!-- Bulk Import Modal -->
         <div class="modal-overlay" id="bulkImportModal">
@@ -679,6 +1138,9 @@ function renderClassContent(isLoading = false) {
                     <span style="font-weight:600; min-width: 130px; text-align:center;">${new Date(parseInt(year), parseInt(month)-1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                     <button class="btn-icon" style="padding:4px;" onclick="navigateMonth(1)"><span class="material-symbols-rounded" style="font-size:1.2rem;">chevron_right</span></button>
                 </div>
+                <button id="bgTaskBtn" class="btn btn-outline" style="display:none; color: #3b82f6; border-color: #3b82f6; font-weight: 600;" onclick="document.getElementById('terminalModal').classList.add('active')">
+                    <span class="material-symbols-rounded" style="animation: spin 3s linear infinite;">autorenew</span> Task Running
+                </button>
             </div>
             
             <div class="flex gap-2">
@@ -930,28 +1392,88 @@ async function openNotifyModal() {
 }
 
 async function submitNotifications() {
-    const btn = document.querySelector('#notifyModal .btn-primary');
-    let originalHtml = '';
-    if (btn) {
-        originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span> Sending...';
+    closeModal('notifyModal');
+    
+    const bgBtn = document.getElementById('bgTaskBtn');
+    if (bgBtn) bgBtn.style.display = 'flex';
+    
+    const terminalOut = document.getElementById('terminalOutput');
+    if (terminalOut) {
+        terminalOut.innerHTML = `<div style="color: #3b82f6;">&gt; Fetching pending notifications for ${state.todayDate}...</div>`;
     }
 
     try {
-        const result = await apiCall('/api/notifications/send', 'POST', { date: state.todayDate });
-        closeModal('notifyModal');
-        showToast('Notifications process completed.');
-        if (result.logs) {
-            showNotificationLogsModal(result.logs);
+        const pendingRes = await apiCall(`/api/notifications/pending?date=${state.todayDate}`);
+        const pendingIds = pendingRes.pending || [];
+        
+        if (pendingIds.length === 0) {
+            if (terminalOut) {
+                terminalOut.innerHTML += `<div style="color: #10b981;">&gt; No pending notifications found.</div>`;
+            }
+            setTimeout(() => {
+                if (bgBtn) bgBtn.style.display = 'none';
+                showToast('Notifications process completed.');
+                showNotificationLogsModal([{studentName: 'N/A', action: 'None', status: 'Info', reason: 'No new absentees to notify today.'}]);
+            }, 1000);
+            return;
         }
-    } catch(e) { 
-        console.error(e); 
-        showToast('Failed to send alerts', 'error');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
+
+        if (terminalOut) {
+            terminalOut.innerHTML += `<div>&gt; Found ${pendingIds.length} students to notify. Beginning process...</div>`;
+        }
+
+        const allLogs = [];
+        for (let i = 0; i < pendingIds.length; i++) {
+            const sid = pendingIds[i];
+            try {
+                if (terminalOut) {
+                    terminalOut.innerHTML += `<div>&gt; Processing student ID ${sid} (${i + 1}/${pendingIds.length})...</div>`;
+                    terminalOut.scrollTop = terminalOut.scrollHeight;
+                }
+
+                const res = await apiCall('/api/notifications/send-single', 'POST', { date: state.todayDate, student_id: sid });
+                
+                if (res.logs && res.logs.length > 0) {
+                    res.logs.forEach(log => {
+                        allLogs.push(log);
+                        if (terminalOut) {
+                            const color = log.status === 'Success' ? '#10b981' : (log.status === 'Error' ? '#ef4444' : '#a3a3a3');
+                            terminalOut.innerHTML += `<div style="color: ${color};">&gt; [${log.status.toUpperCase()}] ${log.action} for ${log.studentName}: ${log.reason}</div>`;
+                        }
+                    });
+                } else {
+                    if (terminalOut) {
+                        terminalOut.innerHTML += `<div style="color: #f59e0b;">&gt; [SKIPPED] No action required for student ID ${sid} (Missing contact info or not absent).</div>`;
+                    }
+                }
+            } catch (err) {
+                if (terminalOut) {
+                    terminalOut.innerHTML += `<div style="color: #ef4444;">&gt; [FATAL ERROR] Failed to process student ID ${sid}: ${err.message}</div>`;
+                }
+            }
+            if (terminalOut) terminalOut.scrollTop = terminalOut.scrollHeight;
+        }
+        
+        if (terminalOut) {
+            terminalOut.innerHTML += `<div style="color: #10b981; margin-top: 16px;">&gt; Background task completed successfully!</div>`;
+            terminalOut.scrollTop = terminalOut.scrollHeight;
+        }
+
+        setTimeout(() => {
+            if (bgBtn) bgBtn.style.display = 'none';
+            closeModal('terminalModal');
+            showToast('Notifications process completed.');
+            showNotificationLogsModal(allLogs.length > 0 ? allLogs : [{studentName: 'N/A', action: 'None', status: 'Info', reason: 'No new absentees to notify today.'}]);
+        }, 1500);
+
+    } catch(e) {
+        console.error(e);
+        if (terminalOut) {
+            terminalOut.innerHTML += `<div style="color: #ef4444;">&gt; [SYSTEM ERROR] Process halted: ${e.message}</div>`;
+        }
+        showToast('Failed to execute notifications', 'error');
+        if (bgBtn) {
+            bgBtn.style.display = 'none';
         }
     }
 }
