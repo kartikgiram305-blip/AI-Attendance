@@ -68,6 +68,7 @@ $routes = [
     
     'GET /api/notifications/preview' => 'App\Controllers\NotificationsController@preview',
     'GET /api/notifications/pending' => 'App\Controllers\NotificationsController@pending',
+    'GET /api/notifications/history' => 'App\Controllers\NotificationsController@history',
     'POST /api/notifications/send' => 'App\Controllers\NotificationsController@send',
     'POST /api/notifications/send-single' => 'App\Controllers\NotificationsController@sendSingle',
     'POST /api/notifications/twilio-voice-callback' => 'App\Controllers\NotificationsController@twilioVoiceCallback',

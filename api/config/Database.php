@@ -64,6 +64,17 @@ class Database {
                 UNIQUE(student_id, date)
             );
 
+            CREATE TABLE IF NOT EXISTS notification_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                date TEXT,
+                action TEXT,
+                status TEXT,
+                reason TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
             CREATE INDEX IF NOT EXISTS idx_students_class ON students(class_id);
         ");

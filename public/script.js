@@ -1027,6 +1027,35 @@ function renderClassView() {
                 </div>
             </div>
         </div>
+        <!-- History Logs Modal -->
+        <div class="modal-overlay" id="historyModal">
+            <div class="modal-content" style="max-width: 900px; width: 95%;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Notification History</h3>
+                    <button class="btn-icon" onclick="closeModal('historyModal')"><span class="material-symbols-rounded">close</span></button>
+                </div>
+                <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Student</th>
+                                <th>Action</th>
+                                <th>Status</th>
+                                <th>System Logs</th>
+                                <th>Parent Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr><td colspan="6" style="text-align: center; padding: 24px;">Loading history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('historyModal')">Close</button>
+                </div>
+            </div>
+        </div>
         
         <!-- Bulk Import Modal -->
         <div class="modal-overlay" id="bulkImportModal">
@@ -1160,6 +1189,7 @@ function renderClassContent(isLoading = false) {
                     </div>
                 </div>
                 
+                <button class="btn btn-secondary" onclick="openHistoryModal()" title="Notification History"><span class="material-symbols-rounded">history</span> History</button>
                 <button class="btn btn-primary" onclick="openNotifyModal()" title="Notify Parents"><span class="material-symbols-rounded">campaign</span> Notify</button>
             </div>
         </div>
@@ -1729,4 +1759,31 @@ window.onclick = function(event) {
       }
     }
   }
+}
+
+async function openHistoryModal() {
+    document.getElementById('historyModal').classList.add('active');
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px;">Loading history...</td></tr>';
+    try {
+        const res = await apiCall('/api/notifications/history');
+        if (res.logs && res.logs.length > 0) {
+            tbody.innerHTML = res.logs.map(log => {
+                let statusColor = log.status === 'Success' ? 'var(--success)' : (log.status === 'Error' ? 'var(--danger)' : 'var(--text-main)');
+                return `<tr style="border-bottom: 1px solid var(--border-color); background: #fff;">
+                    <td style="padding: 12px 16px; white-space: nowrap;">${new Date(log.created_at).toLocaleString()}</td>
+                    <td style="padding: 12px 16px;">${escapeHTML(log.studentName)}</td>
+                    <td style="padding: 12px 16px;">${escapeHTML(log.action)}</td>
+                    <td style="padding: 12px 16px; color: ${statusColor}; font-weight: 500;">${escapeHTML(log.status)}</td>
+                    <td style="padding: 12px 16px; font-size: 0.85em; max-width: 300px; word-wrap: break-word;">${escapeHTML(log.reason || '-')}</td>
+                    <td style="padding: 12px 16px; font-size: 0.9em; font-style: italic; color: #555;">${escapeHTML(log.parentReason || '-')}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px;">No notification history found.</td></tr>';
+        }
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 24px;">Error loading history.</td></tr>';
+    }
 }

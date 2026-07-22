@@ -105,7 +105,8 @@ class NotificationsController {
             if ($totalAbsences >= 6) {
                 if ($hasContact) {
                     if ($twilioClient && $twilioPhone && !$mockMode) {
-                        $baseUrl = rtrim(getenv('APP_URL') ?: '', '/');
+                        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+                        $baseUrl = $protocol . $_SERVER['HTTP_HOST'];
                         try {
                             $twilioClient->calls->create(
                                 $student['contact_number'], 
@@ -130,7 +131,7 @@ class NotificationsController {
                                 $student['contact_number'],
                                 [
                                     'from' => $twilioPhone,
-                                    'body' => "AttendAI: {$student['name']} was marked absent today ({$date})."
+                                    'body' => "ATTENDANCE ALERT: {$student['name']} has been marked ABSENT today ({$date}). Total absences: {$totalAbsences}. Please contact the school to provide a reason."
                                 ]
                             );
                             $logs[] = ['studentName' => $student['name'], 'action' => 'SMS', 'status' => 'Success', 'reason' => 'Message sent successfully'];
@@ -151,7 +152,7 @@ class NotificationsController {
                                         'From' => [ 'Email' => $mjFromEmail, 'Name' => 'AttendAI' ],
                                         'To' => [ [ 'Email' => $student['email'], 'Name' => $student['name'] ] ],
                                         'Subject' => "Absence Notification",
-                                        'TextPart' => "Dear Parent/Guardian, \n\n{$student['name']} was marked absent on {$date}. \n\nRegards, \nAttendAI System"
+                                        'TextPart' => "Dear Parent/Guardian,\n\nThis is an official notification from AttendAI.\n\nStudent Name: {$student['name']}\nDate of Absence: {$date}\nTotal Absences Recorded: {$totalAbsences}\n\nPlease contact the school administration as soon as possible to provide a valid reason for this absence. Consistent attendance is crucial for academic success.\n\nRegards,\nAttendAI Automated System"
                                     ]
                                 ]
                             ];
@@ -256,7 +257,8 @@ class NotificationsController {
         if ($totalAbsences >= 6) {
             if ($hasContact) {
                 if ($twilioClient && $twilioPhone && !$mockMode) {
-                    $baseUrl = rtrim(getenv('APP_URL') ?: '', '/');
+                    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+                    $baseUrl = $protocol . $_SERVER['HTTP_HOST'];
                     try {
                         $twilioClient->calls->create(
                             $student['contact_number'], 
@@ -281,7 +283,7 @@ class NotificationsController {
                             $student['contact_number'],
                             [
                                 'from' => $twilioPhone,
-                                'body' => "AttendAI: {$student['name']} was marked absent today ({$date})."
+                                'body' => "ATTENDANCE ALERT: {$student['name']} has been marked ABSENT today ({$date}). Total absences: {$totalAbsences}. Please contact the school to provide a reason."
                             ]
                         );
                         $logs[] = ['studentName' => $student['name'], 'action' => 'SMS', 'status' => 'Success', 'reason' => 'Message sent successfully'];
@@ -302,7 +304,7 @@ class NotificationsController {
                                     'From' => [ 'Email' => $mjFromEmail, 'Name' => 'AttendAI' ],
                                     'To' => [ [ 'Email' => $student['email'], 'Name' => $student['name'] ] ],
                                     'Subject' => "Absence Notification",
-                                    'TextPart' => "Dear Parent/Guardian, \n\n{$student['name']} was marked absent on {$date}. \n\nRegards, \nAttendAI System"
+                                    'TextPart' => "Dear Parent/Guardian,\n\nThis is an official notification from AttendAI.\n\nStudent Name: {$student['name']}\nDate of Absence: {$date}\nTotal Absences Recorded: {$totalAbsences}\n\nPlease contact the school administration as soon as possible to provide a valid reason for this absence. Consistent attendance is crucial for academic success.\n\nRegards,\nAttendAI Automated System"
                                 ]
                             ]
                         ];
@@ -324,10 +326,32 @@ class NotificationsController {
         $updateStmt = $pdo->prepare("UPDATE attendance SET notification_sent = 1 WHERE student_id = ? AND date = ?");
         $updateStmt->execute([$studentId, $date]);
 
+        $insertLogStmt = $pdo->prepare("INSERT INTO notification_logs (student_id, date, action, status, reason) VALUES (?, ?, ?, ?, ?)");
+        foreach ($logs as $log) {
+            $insertLogStmt->execute([$studentId, $date, $log['action'], $log['status'], $log['reason']]);
+        }
+
+        // Auto-cleanup: Keep only the latest 350 records
+        $pdo->exec("DELETE FROM notification_logs WHERE id NOT IN (SELECT id FROM notification_logs ORDER BY created_at DESC LIMIT 350)");
+
         echo json_encode([
             'success' => true, 
             'logs' => $logs
         ]);
+    }
+
+    public function history() {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query("
+            SELECT nl.*, s.name as studentName, a.reason as parentReason 
+            FROM notification_logs nl 
+            JOIN students s ON nl.student_id = s.id 
+            LEFT JOIN attendance a ON nl.student_id = a.student_id AND nl.date = a.date
+            ORDER BY nl.created_at DESC 
+            LIMIT 350
+        ");
+        $logs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'logs' => $logs]);
     }
 
     public function twilioVoiceCallback() {
