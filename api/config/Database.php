@@ -35,7 +35,8 @@ class Database {
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
-                password TEXT
+                password TEXT,
+                preferences TEXT
             );
 
             CREATE TABLE IF NOT EXISTS classes (
@@ -90,6 +91,19 @@ class Database {
         }
         if (!$hasReason) {
             $pdo->exec("ALTER TABLE attendance ADD COLUMN reason TEXT;");
+        }
+
+        // Add preferences column to users if it doesn't exist
+        $usersInfo = $pdo->query("PRAGMA table_info(users)")->fetchAll();
+        $hasPreferences = false;
+        foreach ($usersInfo as $column) {
+            if ($column['name'] === 'preferences') {
+                $hasPreferences = true;
+                break;
+            }
+        }
+        if (!$hasPreferences) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN preferences TEXT;");
         }
 
         // Insert default user if not exists

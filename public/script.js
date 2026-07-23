@@ -1185,7 +1185,9 @@ function renderClassContent(isLoading = false) {
                         <span class="material-symbols-rounded">download</span> Export
                     </button>
                     <div id="exportMenu" class="dropdown-content" style="display:none; position:absolute; right:0; top:100%; background:white; box-shadow:var(--shadow-lg); border-radius:var(--radius-md); border:1px solid var(--border-color); min-width: 150px; z-index:10;">
-                        <a href="#" onclick="exportToCSV()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download CSV</a>
+                        <a href="javascript:void(0)" onclick="exportToCSV()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download CSV</a>
+                        <a href="javascript:void(0)" onclick="exportToExcel()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download Excel</a>
+                        <a href="javascript:void(0)" onclick="exportToPDF()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download PDF</a>
                     </div>
                 </div>
                 
@@ -1751,6 +1753,92 @@ async function exportToCSV() {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
+    } catch(err) {
+        console.error(err);
+        showToast('Failed to export', 'error');
+    }
+}
+
+async function fetchExportData() {
+    const res = await fetch(`/api/attendance/export?classId=${state.currentClass.id}&month=${state.currentMonth}`, {
+        headers: { 'Authorization': `Bearer ${state.token}` }
+    });
+    if (!res.ok) throw new Error('Export failed');
+    return await res.text();
+}
+
+function parseCSV(text) {
+    const lines = text.split('\n');
+    const result = [];
+    for (let line of lines) {
+        if (!line.trim()) continue;
+        const row = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            if (line[i] === '"') {
+                if (i < line.length - 1 && line[i+1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (line[i] === ',' && !inQuotes) {
+                row.push(cur);
+                cur = '';
+            } else {
+                cur += line[i];
+            }
+        }
+        row.push(cur);
+        result.push(row);
+    }
+    return result;
+}
+
+async function exportToExcel() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) menu.style.display = 'none';
+    if (!state.currentClass || state.currentStudents.length === 0) return showToast('No data to export', 'error');
+    
+    showToast('Preparing Excel...', 'success');
+    try {
+        const csvText = await fetchExportData();
+        const data = parseCSV(csvText);
+        let filename = `${state.currentClass.name.replace(/\s+/g, '_')}_Attendance_${state.currentMonth}.xlsx`;
+        
+        const wb = window.XLSX.utils.book_new();
+        const ws = window.XLSX.utils.aoa_to_sheet(data);
+        window.XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+        window.XLSX.writeFile(wb, filename);
+    } catch(err) {
+        console.error(err);
+        showToast('Failed to export', 'error');
+    }
+}
+
+async function exportToPDF() {
+    const menu = document.getElementById('exportMenu');
+    if (menu) menu.style.display = 'none';
+    if (!state.currentClass || state.currentStudents.length === 0) return showToast('No data to export', 'error');
+    
+    showToast('Preparing PDF...', 'success');
+    try {
+        const csvText = await fetchExportData();
+        const data = parseCSV(csvText);
+        let filename = `${state.currentClass.name.replace(/\s+/g, '_')}_Attendance_${state.currentMonth}.pdf`;
+        
+        const doc = new window.jspdf.jsPDF('landscape');
+        doc.text(`Attendance Report - ${state.currentClass.name} - ${state.currentMonth}`, 14, 15);
+        
+        doc.autoTable({
+            head: [data[0]],
+            body: data.slice(1),
+            startY: 20,
+            styles: { fontSize: 7, cellPadding: 1 },
+            headStyles: { fillColor: [66, 66, 66] }
+        });
+        doc.save(filename);
     } catch(err) {
         console.error(err);
         showToast('Failed to export', 'error');
