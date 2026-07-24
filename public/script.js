@@ -2,11 +2,226 @@ const app = document.getElementById('app');
 
 const defaultPreferences = ['trend', 'today', 'classes', 'volume', 'dow', 'atRisk', 'absences', 'heatmap', 'sixMonth', 'topStudents', 'classRadar'];
 
+
+const translations = {
+    'en': {
+        'signIn': 'Please sign in to continue',
+        'username': 'Username',
+        'password': 'Password',
+        'signInBtn': 'Sign In',
+        'invalidCreds': 'Invalid credentials',
+        'welcome': 'Welcome',
+        'logout': 'Logout',
+        'globalInsights': 'Global Insights',
+        'globalInsightsDesc': 'Overview of attendance across all classes',
+        'classesOverview': 'Classes Overview',
+        'classesOverviewDesc': 'Manage your classes and student rosters',
+        'newClass': 'New Class',
+        'createClassTitle': 'Create New Class',
+        'className': 'Class Name',
+        'cancel': 'Cancel',
+        'create': 'Create',
+        'students': 'Students',
+        'created': 'Created',
+        'classView': 'Class View',
+        'addStudent': 'Add Student',
+        'import': 'Import',
+        'export': 'Export',
+        'downloadCsv': 'Download CSV',
+        'downloadExcel': 'Download Excel',
+        'downloadPdf': 'Download PDF',
+        'history': 'History',
+        'notify': 'Notify',
+        'addStudentTitle': 'Add Student',
+        'studentName': 'Student Name',
+        'email': 'Parent/Student Email',
+        'contact': 'Contact Number',
+        'add': 'Add',
+        'editStudent': 'Edit Student',
+        'delete': 'Delete',
+        'save': 'Save',
+        'editClass': 'Edit Class Name',
+        'notifyParents': 'Notify Parents',
+        'notifyDesc': 'The following actions will be executed based on the recorded absences for Today',
+        'emails': 'Emails',
+        'sms': 'SMS',
+        'voiceCalls': 'Voice Calls',
+        'sendAlerts': 'Send Alerts',
+        'bulkImport': 'Bulk Import Students',
+        'bulkImportDesc': 'Please upload an Excel file (.xlsx, .xls) containing your student roster.',
+        'chooseExcel': 'Choose Excel File',
+        'classInsights': 'Class Insights',
+        'present': 'Present',
+        'absent': 'Absent',
+        'attendanceReport': 'Attendance Report',
+        'noData': 'No data to export',
+        'preparingExcel': 'Preparing Excel...',
+        'preparingPdf': 'Preparing PDF...',
+        'preparingCsv': 'Preparing CSV...',
+        'failedExport': 'Failed to export',
+        'language': 'Language',
+        'classPlaceHolder': 'e.g. Mathematics 101',
+        'loading': 'Loading...',
+        'studentAddError': 'Failed to add student',
+        'classDeleted': 'Class deleted',
+        'classDeleteFail': 'Failed to delete class',
+        'classDeleteConfirm': 'Are you sure you want to delete this class? This cannot be undone.',
+        'studentDeleted': 'Student deleted',
+        'studentDeleteFail': 'Failed to delete student',
+        'studentDeleteConfirm': 'Are you sure you want to delete this student?'
+    },
+    'mr': {
+        'signIn': 'कृपया पुढे जाण्यासाठी साइन इन करा',
+        'username': 'वापरकर्तानाव',
+        'password': 'पासवर्ड',
+        'signInBtn': 'साइन इन',
+        'invalidCreds': 'अवैध क्रेडेन्शियल्स',
+        'welcome': 'स्वागत आहे',
+        'logout': 'लॉग आउट',
+        'globalInsights': 'जागतिक अंतर्दृष्टी',
+        'globalInsightsDesc': 'सर्व वर्गांमधील उपस्थितीचा आढावा',
+        'classesOverview': 'वर्गांचा आढावा',
+        'classesOverviewDesc': 'आपले वर्ग आणि विद्यार्थ्यांची यादी व्यवस्थापित करा',
+        'newClass': 'नवीन वर्ग',
+        'createClassTitle': 'नवीन वर्ग तयार करा',
+        'className': 'वर्गाचे नाव',
+        'cancel': 'रद्द करा',
+        'create': 'तयार करा',
+        'students': 'विद्यार्थी',
+        'created': 'तयार केले',
+        'classView': 'वर्ग दृश्य',
+        'addStudent': 'विद्यार्थी जोडा',
+        'import': 'आयात करा',
+        'export': 'निर्यात करा',
+        'downloadCsv': 'CSV डाउनलोड करा',
+        'downloadExcel': 'Excel डाउनलोड करा',
+        'downloadPdf': 'PDF डाउनलोड करा',
+        'history': 'इतिहास',
+        'notify': 'सूचित करा',
+        'addStudentTitle': 'विद्यार्थी जोडा',
+        'studentName': 'विद्यार्थ्याचे नाव',
+        'email': 'पालक/विद्यार्थ्यांचा ईमेल',
+        'contact': 'संपर्क क्रमांक',
+        'add': 'जोडा',
+        'editStudent': 'विद्यार्थी संपादित करा',
+        'delete': 'हटवा',
+        'save': 'जतन करा',
+        'editClass': 'वर्गाचे नाव संपादित करा',
+        'notifyParents': 'पालकांना सूचित करा',
+        'notifyDesc': 'आजच्या अनुपस्थितीवर आधारित खालील कृती केल्या जातील',
+        'emails': 'ईमेल्स',
+        'sms': 'एसएमएस',
+        'voiceCalls': 'व्हॉइस कॉल्स',
+        'sendAlerts': 'अलर्ट पाठवा',
+        'bulkImport': 'विद्यार्थ्यांची मोठ्या प्रमाणावर आयात',
+        'bulkImportDesc': 'कृपया आपल्या विद्यार्थ्यांची यादी असलेली Excel फाइल (.xlsx, .xls) अपलोड करा.',
+        'chooseExcel': 'Excel फाइल निवडा',
+        'classInsights': 'वर्गाची अंतर्दृष्टी',
+        'present': 'उपस्थित',
+        'absent': 'अनुपस्थित',
+        'attendanceReport': 'उपस्थिती अहवाल',
+        'noData': 'निर्यात करण्यासाठी डेटा नाही',
+        'preparingExcel': 'Excel तयार करत आहे...',
+        'preparingPdf': 'PDF तयार करत आहे...',
+        'preparingCsv': 'CSV तयार करत आहे...',
+        'failedExport': 'निर्यात करण्यात अयशस्वी',
+        'language': 'भाषा',
+        'classPlaceHolder': 'उदा. गणित 101',
+        'loading': 'लोड करत आहे...',
+        'studentAddError': 'विद्यार्थी जोडण्यात अयशस्वी',
+        'classDeleted': 'वर्ग हटवला',
+        'classDeleteFail': 'वर्ग हटवण्यात अयशस्वी',
+        'classDeleteConfirm': 'आपली खात्री आहे की आपण हा वर्ग हटवू इच्छिता? हे पूर्ववत केले जाऊ शकत नाही.',
+        'studentDeleted': 'विद्यार्थी हटवला',
+        'studentDeleteFail': 'विद्यार्थी हटवण्यात अयशस्वी',
+        'studentDeleteConfirm': 'आपली खात्री आहे की आपण या विद्यार्थ्याला हटवू इच्छिता?'
+    },
+    'hi': {
+        'signIn': 'कृपया जारी रखने के लिए साइन इन करें',
+        'username': 'उपयोगकर्ता नाम',
+        'password': 'पासवर्ड',
+        'signInBtn': 'साइन इन करें',
+        'invalidCreds': 'अमान्य क्रेडेंशियल्स',
+        'welcome': 'स्वागत है',
+        'logout': 'लॉग आउट',
+        'globalInsights': 'वैश्विक अंतर्दृष्टि',
+        'globalInsightsDesc': 'सभी कक्षाओं में उपस्थिति का अवलोकन',
+        'classesOverview': 'कक्षाओं का अवलोकन',
+        'classesOverviewDesc': 'अपनी कक्षाओं और छात्र रोस्टर का प्रबंधन करें',
+        'newClass': 'नई कक्षा',
+        'createClassTitle': 'नई कक्षा बनाएं',
+        'className': 'कक्षा का नाम',
+        'cancel': 'रद्द करें',
+        'create': 'बनाएं',
+        'students': 'छात्र',
+        'created': 'बनाया गया',
+        'classView': 'कक्षा दृश्य',
+        'addStudent': 'छात्र जोड़ें',
+        'import': 'आयात करें',
+        'export': 'निर्यात करें',
+        'downloadCsv': 'CSV डाउनलोड करें',
+        'downloadExcel': 'Excel डाउनलोड करें',
+        'downloadPdf': 'PDF डाउनलोड करें',
+        'history': 'इतिहास',
+        'notify': 'सूचित करें',
+        'addStudentTitle': 'छात्र जोड़ें',
+        'studentName': 'छात्र का नाम',
+        'email': 'माता-पिता/छात्र ईमेल',
+        'contact': 'संपर्क नंबर',
+        'add': 'जोड़ें',
+        'editStudent': 'छात्र संपादित करें',
+        'delete': 'हटाएं',
+        'save': 'सहेजें',
+        'editClass': 'कक्षा का नाम संपादित करें',
+        'notifyParents': 'माता-पिता को सूचित करें',
+        'notifyDesc': 'आज की अनुपस्थिति के आधार पर निम्नलिखित कार्य किए जाएंगे',
+        'emails': 'ईमेल',
+        'sms': 'एसएमएस',
+        'voiceCalls': 'वॉयस कॉल',
+        'sendAlerts': 'अलर्ट भेजें',
+        'bulkImport': 'छात्रों का थोक आयात',
+        'bulkImportDesc': 'कृपया अपने छात्र रोस्टर वाली Excel फ़ाइल (.xlsx, .xls) अपलोड करें।',
+        'chooseExcel': 'Excel फ़ाइल चुनें',
+        'classInsights': 'कक्षा की अंतर्दृष्टि',
+        'present': 'उपस्थित',
+        'absent': 'अनुपस्थित',
+        'attendanceReport': 'उपस्थिति रिपोर्ट',
+        'noData': 'निर्यात करने के लिए कोई डेटा नहीं',
+        'preparingExcel': 'Excel तैयार कर रहा है...',
+        'preparingPdf': 'PDF तैयार कर रहा है...',
+        'preparingCsv': 'CSV तैयार कर रहा है...',
+        'failedExport': 'निर्यात करने में विफल',
+        'language': 'भाषा',
+        'classPlaceHolder': 'उदा. गणित 101',
+        'loading': 'लोड हो रहा है...',
+        'studentAddError': 'छात्र को जोड़ने में विफल',
+        'classDeleted': 'कक्षा हटाई गई',
+        'classDeleteFail': 'कक्षा को हटाने में विफल',
+        'classDeleteConfirm': 'क्या आप वाकई इस कक्षा को हटाना चाहते हैं? इसे पूर्ववत नहीं किया जा सकता।',
+        'studentDeleted': 'छात्र हटाया गया',
+        'studentDeleteFail': 'छात्र को हटाने में विफल',
+        'studentDeleteConfirm': 'क्या आप वाकई इस छात्र को हटाना चाहते हैं?'
+    }
+};
+
+function t(key) {
+    const lang = state.language || 'en';
+    return (translations[lang] && translations[lang][key]) || translations['en'][key] || key;
+}
+
+function changeLanguage(lang) {
+    state.language = lang;
+    localStorage.setItem('language', lang);
+    render();
+}
+
+
 const state = {
     token: localStorage.getItem('token') || null,
     username: localStorage.getItem('username') || null,
     preferences: JSON.parse(localStorage.getItem('preferences')) || defaultPreferences,
     currentPath: '/',
+    language: localStorage.getItem('language') || 'en',
     classes: [],
     currentClass: null,
     currentStudents: [],
@@ -78,7 +293,7 @@ function render() {
     if (state.currentPath === '/login') {
         app.innerHTML = renderLogin();
         bindLogin();
-    } else if (state.currentPath === '/') {
+    } else if (state.currentPath === '/' || state.currentPath === '/app') {
         app.innerHTML = renderNavbar() + renderDashboard();
         bindDashboard();
     } else if (state.currentPath.startsWith('/class/')) {
@@ -92,19 +307,26 @@ function render() {
 function renderLogin() {
     return `
         <div class="auth-container animate-fade-in">
+            <div style="position: absolute; top: 16px; right: 16px; z-index: 100;">
+                <select class="input-control" style="background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid var(--border-color); padding: 8px 32px 8px 12px; border-radius: var(--radius-md); font-weight: 500;" onchange="changeLanguage(this.value)">
+                    <option value="en" ${state.language === 'en' ? 'selected' : ''}>English</option>
+                    <option value="mr" ${state.language === 'mr' ? 'selected' : ''}>मराठी</option>
+                    <option value="hi" ${state.language === 'hi' ? 'selected' : ''}>हिन्दी</option>
+                </select>
+            </div>
             <div class="auth-card">
                 <h1>AttendAI</h1>
-                <p class="text-muted mb-4">Please sign in to continue</p>
+                <p class="text-muted mb-4">${t("signIn")}</p>
                 <form id="loginForm">
                     <div class="input-group text-left">
-                        <label>Username</label>
+                        <label>${t("username")}</label>
                         <input type="text" id="username" class="input-control" value="user1" required>
                     </div>
                     <div class="input-group text-left">
-                        <label>Password</label>
+                        <label>${t("password")}</label>
                         <input type="password" id="password" class="input-control" value="user1" required>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 16px;">Sign In</button>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 16px;">${t("signInBtn")}</button>
                     <p id="loginError" class="text-danger mt-2" style="display:none;"></p>
                 </form>
             </div>
@@ -134,7 +356,7 @@ function bindLogin() {
                 state.preferences = prefs;
                 navigate('/');
             } else {
-                document.getElementById('loginError').textContent = 'Invalid credentials';
+                document.getElementById('loginError').textContent = t('invalidCreds');
                 document.getElementById('loginError').style.display = 'block';
             }
         } catch (err) {
@@ -151,8 +373,8 @@ function renderNavbar() {
                 <span class="material-symbols-rounded">school</span> Attend<span>AI</span>
             </div>
             <div class="flex items-center gap-4">
-                <span class="text-muted text-sm">Welcome, <strong>${state.username}</strong></span>
-                <button class="btn-icon" onclick="logout()" title="Logout"><span class="material-symbols-rounded">logout</span></button>
+                <span class="text-muted text-sm">${t("welcome")}, <strong>${state.username}</strong></span>
+                <button class="btn-icon" onclick="logout()" title="${t("logout")}"><span class="material-symbols-rounded">logout</span></button>
             </div>
         </nav>
     `;
@@ -164,11 +386,11 @@ function renderDashboard() {
         <div class="container animate-fade-in">
             <div class="header-actions">
                 <div>
-                    <h2>Classes Overview</h2>
-                    <p class="text-muted">Manage your classes and student rosters</p>
+                    <h2>${t("classesOverview")}</h2>
+                    <p class="text-muted">${t("classesOverviewDesc")}</p>
                 </div>
                 <button class="btn btn-primary" onclick="openCreateClassModal()">
-                    <span class="material-symbols-rounded">add</span> New Class
+                    <span class="material-symbols-rounded">add</span> ${t("newClass")}
                 </button>
             </div>
             <div class="grid" id="classesGrid" style="margin-bottom: 48px;">
@@ -177,8 +399,8 @@ function renderDashboard() {
 
             <div class="header-actions">
                 <div>
-                    <h2>Global Insights</h2>
-                    <p class="text-muted">Overview of attendance across all classes</p>
+                    <h2>${t("globalInsights")}</h2>
+                    <p class="text-muted">${t("globalInsightsDesc")}</p>
                 </div>
                 <button class="btn btn-outline" onclick="openCustomizeModal()">
                     <span class="material-symbols-rounded">tune</span> Customize
@@ -222,7 +444,7 @@ function renderDashboard() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeModal('customizeModal')">Cancel</button>
+                    <button class="btn btn-secondary" onclick="closeModal('customizeModal')">${t("cancel")}</button>
                     <button class="btn btn-primary" onclick="saveCustomizeSettings()">Apply Changes</button>
                 </div>
             </div>
@@ -232,16 +454,16 @@ function renderDashboard() {
         <div class="modal-overlay" id="createClassModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Create New Class</h3>
+                    <h3 class="modal-title">${t("createClassTitle")}</h3>
                     <button class="btn-icon" onclick="closeModal('createClassModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <div class="input-group">
-                    <label>Class Name</label>
-                    <input type="text" id="newClassName" class="input-control" placeholder="e.g. Mathematics 101">
+                    <label>${t("className")}</label>
+                    <input type="text" id="newClassName" class="input-control" placeholder="${t("classPlaceHolder")}">
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeModal('createClassModal')">Cancel</button>
-                    <button class="btn btn-primary" onclick="submitCreateClass()">Create</button>
+                    <button class="btn btn-secondary" onclick="closeModal('createClassModal')">${t("cancel")}</button>
+                    <button class="btn btn-primary" onclick="submitCreateClass()">${t("create")}</button>
                 </div>
             </div>
         </div>
@@ -633,8 +855,8 @@ async function loadGlobalDashboard() {
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Present', data: presentData, backgroundColor: '#10B981', stack: 'Stack 0' },
-                        { label: 'Absent', data: absentData, backgroundColor: '#EF4444', stack: 'Stack 0' }
+                        { label: t('present'), data: presentData, backgroundColor: '#10B981', stack: 'Stack 0' },
+                        { label: t('absent'), data: absentData, backgroundColor: '#EF4444', stack: 'Stack 0' }
                     ]
                 },
                 options: {
@@ -866,7 +1088,7 @@ async function loadClasses() {
             <div class="card" onclick="navigate('/class/${c.id}')">
                 <div class="card-header">
                     <span class="card-title">${c.name}</span>
-                    <span class="badge">${c.studentCount} Students</span>
+                    <span class="badge">${c.studentCount} ${t("students")}</span>
                 </div>
             </div>
         `).join('');
@@ -907,23 +1129,23 @@ function renderClassView() {
         <div class="modal-overlay" id="addStudentModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Add Student</h3>
+                    <h3 class="modal-title">${t("addStudentTitle")}</h3>
                     <button class="btn-icon" onclick="closeModal('addStudentModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <div class="input-group">
-                    <label>Student Name</label>
+                    <label>${t("studentName")}</label>
                     <input type="text" id="newStudentName" class="input-control" required>
                 </div>
                 <div class="input-group">
-                    <label>Parent/Student Email</label>
+                    <label>${t("email")}</label>
                     <input type="email" id="newStudentEmail" class="input-control" required>
                 </div>
                 <div class="input-group">
-                    <label>Contact Number</label>
+                    <label>${t("contact")}</label>
                     <input type="text" id="newStudentContact" class="input-control" required>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeModal('addStudentModal')">Cancel</button>
+                    <button class="btn btn-secondary" onclick="closeModal('addStudentModal')">${t("cancel")}</button>
                     <button class="btn btn-primary" onclick="submitAddStudent()">Add</button>
                 </div>
             </div>
@@ -933,27 +1155,27 @@ function renderClassView() {
         <div class="modal-overlay" id="editStudentModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Edit Student</h3>
+                    <h3 class="modal-title">${t("editStudent")}</h3>
                     <button class="btn-icon" onclick="closeModal('editStudentModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <input type="hidden" id="editStudentId">
                 <div class="input-group">
-                    <label>Student Name</label>
+                    <label>${t("studentName")}</label>
                     <input type="text" id="editStudentName" class="input-control" required>
                 </div>
                 <div class="input-group">
-                    <label>Parent/Student Email</label>
+                    <label>${t("email")}</label>
                     <input type="email" id="editStudentEmail" class="input-control" required>
                 </div>
                 <div class="input-group">
-                    <label>Contact Number</label>
+                    <label>${t("contact")}</label>
                     <input type="text" id="editStudentContact" class="input-control" required>
                 </div>
                 <div class="modal-footer" style="justify-content:space-between;">
                     <button class="btn btn-danger btn-small" onclick="deleteStudent()">Delete Student</button>
                     <div class="flex gap-2">
-                        <button class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
-                        <button class="btn btn-primary" onclick="submitEditStudent()">Save</button>
+                        <button class="btn btn-secondary" onclick="closeModal('editStudentModal')">${t("cancel")}</button>
+                        <button class="btn btn-primary" onclick="submitEditStudent()">${t("save")}</button>
                     </div>
                 </div>
             </div>
@@ -963,18 +1185,18 @@ function renderClassView() {
         <div class="modal-overlay" id="editClassModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Edit Class Name</h3>
+                    <h3 class="modal-title">${t("editClass")}</h3>
                     <button class="btn-icon" onclick="closeModal('editClassModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <div class="input-group">
-                    <label>Class Name</label>
+                    <label>${t("className")}</label>
                     <input type="text" id="editClassName" class="input-control">
                 </div>
                 <div class="modal-footer" style="justify-content:space-between;">
                     <button class="btn btn-danger btn-small" onclick="deleteClass()">Delete Class</button>
                     <div class="flex gap-2">
-                        <button class="btn btn-secondary" onclick="closeModal('editClassModal')">Cancel</button>
-                        <button class="btn btn-primary" onclick="submitEditClass()">Save</button>
+                        <button class="btn btn-secondary" onclick="closeModal('editClassModal')">${t("cancel")}</button>
+                        <button class="btn btn-primary" onclick="submitEditClass()">${t("save")}</button>
                     </div>
                 </div>
             </div>
@@ -987,7 +1209,7 @@ function renderClassView() {
                     <h3 class="modal-title">Send Absence Alerts</h3>
                     <button class="btn-icon" onclick="closeModal('notifyModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
-                <p class="text-muted mb-4">The following actions will be executed based on the recorded absences for <strong>Today (${state.todayDate})</strong>.</p>
+                <p class="text-muted mb-4">${t("notifyDesc")} <strong>(${state.todayDate})</strong>.</p>
                 <div class="stats-row">
                     <div class="stat-box emails">
                         <div class="stat-val" id="prevEmails">0</div>
@@ -1003,8 +1225,8 @@ function renderClassView() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeModal('notifyModal')">Cancel</button>
-                    <button class="btn btn-primary" onclick="submitNotifications()"><span class="material-symbols-rounded">send</span> Send Alerts</button>
+                    <button class="btn btn-secondary" onclick="closeModal('notifyModal')">${t("cancel")}</button>
+                    <button class="btn btn-primary" onclick="submitNotifications()"><span class="material-symbols-rounded">send</span> ${t("sendAlerts")}</button>
                 </div>
             </div>
         </div>
@@ -1061,11 +1283,11 @@ function renderClassView() {
         <div class="modal-overlay" id="bulkImportModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Bulk Import Students</h3>
+                    <h3 class="modal-title">${t("bulkImport")}</h3>
                     <button class="btn-icon" onclick="closeModal('bulkImportModal')"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <div class="mb-4">
-                    <p class="text-muted mb-4" style="line-height:1.5;">Please upload an Excel file (.xlsx, .xls) containing your student roster. The file must contain the following columns in exactly this format:</p>
+                    <p class="text-muted mb-4" style="line-height:1.5;">${t("bulkImportDesc")}</p>
                     <div style="background:white; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-sm);">
                         <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
                             <thead style="background:#F1F5F9; text-align:left; border-bottom:1px solid var(--border-color);">
@@ -1102,7 +1324,7 @@ function renderClassView() {
 }
 
 async function bindClassView(classId) {
-    state.currentClass = state.classes.find(c => c.id == classId) || { id: classId, name: 'Loading...' };
+    state.currentClass = state.classes.find(c => c.id == classId) || { id: classId, name: t('loading') };
     
     renderClassContent(true); // render skeleton
     
@@ -1156,7 +1378,7 @@ function renderClassContent(isLoading = false) {
                 <div style="display:flex; align-items:center; gap: 16px;">
                     <button class="btn-icon" style="background:var(--surface); border:1px solid var(--border-color);" onclick="navigate('/')" title="Back to Classes"><span class="material-symbols-rounded">arrow_back</span></button>
                     <h2 style="display:flex; align-items:center; gap:8px; margin:0;">
-                        ${state.currentClass ? escapeHTML(state.currentClass.name) : 'Class View'}
+                        ${state.currentClass ? escapeHTML(state.currentClass.name) : t('classView')}
                         <button class="btn-icon" style="font-size:1.2rem; color:var(--text-muted);" onclick="openEditClassModal()" title="Edit Class Name">
                             <span class="material-symbols-rounded" style="font-size:1.2rem;">edit</span>
                         </button>
@@ -1173,31 +1395,31 @@ function renderClassContent(isLoading = false) {
             </div>
             
             <div class="flex gap-2">
-                <button class="btn btn-secondary" onclick="document.getElementById('addStudentModal').classList.add('active')" title="Add Student">
+                <button class="btn btn-secondary" onclick="document.getElementById('addStudentModal').classList.add('active')" title="${t("addStudent")}">
                     <span class="material-symbols-rounded">person_add</span> Add
                 </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('bulkImportModal').classList.add('active')" title="Bulk Import (Excel)">
+                <button class="btn btn-secondary" onclick="document.getElementById('bulkImportModal').classList.add('active')" title="${t("bulkImport")}">
                     <span class="material-symbols-rounded">upload_file</span> Import
                 </button>
                 
                 <div class="dropdown" style="position:relative; display:inline-block;">
-                    <button class="btn btn-secondary" onclick="const m = document.getElementById('exportMenu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; event.stopPropagation();" title="Export Data">
+                    <button class="btn btn-secondary" onclick="const m = document.getElementById('exportMenu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; event.stopPropagation();" title="${t("export")}">
                         <span class="material-symbols-rounded">download</span> Export
                     </button>
                     <div id="exportMenu" class="dropdown-content" style="display:none; position:absolute; right:0; top:100%; background:white; box-shadow:var(--shadow-lg); border-radius:var(--radius-md); border:1px solid var(--border-color); min-width: 150px; z-index:10;">
-                        <a href="javascript:void(0)" onclick="exportToCSV()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download CSV</a>
-                        <a href="javascript:void(0)" onclick="exportToExcel()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download Excel</a>
-                        <a href="javascript:void(0)" onclick="exportToPDF()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">Download PDF</a>
+                        <a href="javascript:void(0)" onclick="exportToCSV()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">${t("downloadCsv")}</a>
+                        <a href="javascript:void(0)" onclick="exportToExcel()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">${t("downloadExcel")}</a>
+                        <a href="javascript:void(0)" onclick="exportToPDF()" style="display:block; padding:12px 16px; color:var(--text-main); text-decoration:none;">${t("downloadPdf")}</a>
                     </div>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="openHistoryModal()" title="Notification History"><span class="material-symbols-rounded">history</span> History</button>
-                <button class="btn btn-primary" onclick="openNotifyModal()" title="Notify Parents"><span class="material-symbols-rounded">campaign</span> Notify</button>
+                <button class="btn btn-secondary" onclick="openHistoryModal()" title="${t("history")}"><span class="material-symbols-rounded">history</span> ${t("history")}</button>
+                <button class="btn btn-primary" onclick="openNotifyModal()" title="${t("notifyParents")}"><span class="material-symbols-rounded">campaign</span> ${t("notify")}</button>
             </div>
         </div>
         
         <div id="chartContainer" class="mb-4" style="background:white; border-radius:var(--radius-lg); padding:24px; border:1px solid var(--border-color); box-shadow:var(--shadow-sm); display:none;">
-            <h3 class="mb-4">Class Insights</h3>
+            <h3 class="mb-4">${t("classInsights")}</h3>
             <div style="position: relative; height: 150px; width: 100%;">
                 <canvas id="attendanceChart"></canvas>
             </div>
@@ -1626,25 +1848,25 @@ async function submitEditStudent() {
 }
 
 async function deleteClass() {
-    if(!confirm('Are you sure you want to delete this class? This cannot be undone.')) return;
+    if(!confirm(t('classDeleteConfirm'))) return;
     try {
         await apiCall(`/api/classes/${state.currentClass.id}`, 'DELETE');
         closeModal('editClassModal');
-        showToast('Class deleted');
+        showToast(t('classDeleted'));
         navigate('/');
-    } catch(e) { console.error(e); showToast('Failed to delete class', 'error'); }
+    } catch(e) { console.error(e); showToast(t('classDeleteFail'), 'error'); }
 }
 
 async function deleteStudent() {
     const id = document.getElementById('editStudentId').value;
-    if(!confirm('Are you sure you want to delete this student?')) return;
+    if(!confirm(t('studentDeleteConfirm'))) return;
     try {
         await apiCall(`/api/students/${id}`, 'DELETE');
         closeModal('editStudentModal');
-        showToast('Student deleted');
+        showToast(t('studentDeleted'));
         await loadAttendanceData(state.currentClass.id, state.currentMonth);
         renderClassContent();
-    } catch(e) { console.error(e); showToast('Failed to delete student', 'error'); }
+    } catch(e) { console.error(e); showToast(t('studentDeleteFail'), 'error'); }
 }
 
 // Init
@@ -1727,9 +1949,9 @@ function escapeHTML(str) {
 async function exportToCSV() {
     const menu = document.getElementById('exportMenu');
     if (menu) menu.style.display = 'none';
-    if (!state.currentClass || state.currentStudents.length === 0) return showToast('No data to export', 'error');
+    if (!state.currentClass || state.currentStudents.length === 0) return showToast(t('noData'), 'error');
     
-    showToast('Preparing CSV...', 'success');
+    showToast(t('preparingCsv'), 'success');
     try {
         const res = await fetch(`/api/attendance/export?classId=${state.currentClass.id}&month=${state.currentMonth}`, {
             headers: { 'Authorization': `Bearer ${state.token}` }
@@ -1755,7 +1977,7 @@ async function exportToCSV() {
         window.URL.revokeObjectURL(url);
     } catch(err) {
         console.error(err);
-        showToast('Failed to export', 'error');
+        showToast(t('failedExport'), 'error');
     }
 }
 
@@ -1799,9 +2021,9 @@ function parseCSV(text) {
 async function exportToExcel() {
     const menu = document.getElementById('exportMenu');
     if (menu) menu.style.display = 'none';
-    if (!state.currentClass || state.currentStudents.length === 0) return showToast('No data to export', 'error');
+    if (!state.currentClass || state.currentStudents.length === 0) return showToast(t('noData'), 'error');
     
-    showToast('Preparing Excel...', 'success');
+    showToast(t('preparingExcel'), 'success');
     try {
         const csvText = await fetchExportData();
         const data = parseCSV(csvText);
@@ -1813,16 +2035,16 @@ async function exportToExcel() {
         window.XLSX.writeFile(wb, filename);
     } catch(err) {
         console.error(err);
-        showToast('Failed to export', 'error');
+        showToast(t('failedExport'), 'error');
     }
 }
 
 async function exportToPDF() {
     const menu = document.getElementById('exportMenu');
     if (menu) menu.style.display = 'none';
-    if (!state.currentClass || state.currentStudents.length === 0) return showToast('No data to export', 'error');
+    if (!state.currentClass || state.currentStudents.length === 0) return showToast(t('noData'), 'error');
     
-    showToast('Preparing PDF...', 'success');
+    showToast(t('preparingPdf'), 'success');
     try {
         const csvText = await fetchExportData();
         const data = parseCSV(csvText);
@@ -1841,7 +2063,7 @@ async function exportToPDF() {
         doc.save(filename);
     } catch(err) {
         console.error(err);
-        showToast('Failed to export', 'error');
+        showToast(t('failedExport'), 'error');
     }
 }
 
